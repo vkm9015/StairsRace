@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Staircase Dice Race Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: #080b12;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      color: #ffffff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 500px;
+      max-height: 888px;
+      aspect-ratio: 9/16;
+      background: linear-gradient(180deg, 
+        #2a022b 0%, 
+        #781843 25%, 
+        #be3a20 50%, 
+        #d67425 70%, 
+        #123110 88%, 
+        #0a1a09 100%
+      );
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stadium-glow-left, .stadium-glow-right {
+      position: absolute;
+      top: 10%;
+      width: 160px;
+      height: 160px;
+      background: radial-gradient(circle, rgba(255,236,170,0.35) 0%, rgba(255,255,255,0) 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .stadium-glow-left { left: -50px; }
+    .stadium-glow-right { right: -50px; }
+
+    .disclaimer-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
+      color: #ffffff;
+      padding: 5px 9px;
+      font-size: 9px;
+      font-weight: 600;
+      line-height: 1.25;
+      max-width: 150px;
+      border-radius: 6px;
+      z-index: 50;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+    }
+
+    .admin-toggle-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: linear-gradient(135deg, #ffd700, #ff8800);
+      color: #000000;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-weight: 900;
+      font-size: 11px;
+      cursor: pointer;
+      z-index: 90;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+      transition: transform 0.2s;
+    }
+    .admin-toggle-btn:active {
+      transform: scale(0.95);
+    }
+
+    .admin-panel {
+      position: absolute;
+      top: 0;
+      right: -100%;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 14, 26, 0.96);
+      backdrop-filter: blur(10px);
+      z-index: 85;
+      padding: 50px 18px 25px 18px;
+      overflow-y: auto;
+      transition: right 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+      border-left: 3px solid #ffd700;
+    }
+
+    .admin-panel.active {
+      right: 0;
+    }
+
+    .admin-section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .admin-section h3 {
+      color: #ffd700;
+      font-size: 12px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      border-bottom: 1px dashed rgba(255,215,0,0.3);
+      padding-bottom: 4px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 9px;
+    }
+
+    .control-group label {
+      font-size: 11px;
+      color: #dddddd;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .control-group input[type="text"], 
+    .control-group input[type="color"],
+    .control-group input[type="file"] {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #555555;
+      color: #ffffff;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+      accent-color: #ffd700;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .color-row label {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .reset-btn {
+      width: 100%;
+      background: #e63946;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 10px rgba(230,57,70,0.4);
+    }
+
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    .throne-stage-wrapper {
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 35;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .royal-throne-container {
+      position: relative;
+      width: 120px;
+      height: 145px;
+      background: transparent !important;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.85));
+    }
+
+    .royal-throne-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .crown-on-seat-pad {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px;
+      line-height: 1;
+      z-index: 38;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.9));
+      animation: royalCrownGlow 2s infinite alternate ease-in-out;
+      pointer-events: none;
+    }
+
+    @keyframes royalCrownGlow {
+      0% {
+        transform: translateX(-50%) scale(1);
+        filter: drop-shadow(0 0 5px #ffd700);
+      }
+      100% {
+        transform: translateX(-50%) scale(1.12);
+        filter: drop-shadow(0 0 16px #ffffff) drop-shadow(0 0 8px #ff8800);
+      }
+    }
+
+    .throne-banner {
+      background: linear-gradient(135deg, #8a0b36 0%, #4a031a 100%);
+      color: #ffd700;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 4px 14px;
+      border-radius: 6px;
+      border: 1.5px solid #ffd700;
+      margin-top: 2px;
+      white-space: nowrap;
+      text-shadow: 1px 1px 2px #000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+
+    .staircase-container {
+      position: absolute;
+      bottom: 125px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      z-index: 5;
+    }
+
+    .step {
+      position: relative;
+      height: 36px;
+      width: 100%;
+      background: linear-gradient(180deg, #5a606d 0%, #32353a 45%, #18191b 100%);
+      border-top: 2px solid #a3acbd;
+      border-bottom: 1px solid #000000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      margin-bottom: 2px;
+      transition: height 0.2s ease, background 0.2s ease, border-color 0.2s ease, margin 0.2s ease;
+    }
+
+    .balloon {
+      position: absolute;
+      width: 42px;
+      height: 52px;
+      background: radial-gradient(circle at 35% 30%, #a2ffb5 0%, #00b32d 50%, #005e17 85%, #00330c 100%);
+      border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+      box-shadow: inset -4px -6px 10px rgba(0,0,0,0.6), inset 4px 6px 8px rgba(255,255,255,0.8), 0 6px 12px rgba(0,0,0,0.4);
+      z-index: 12;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      animation: balloonFloat 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes balloonFloat {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(4deg); }
+      100% { transform: translateY(-2px) rotate(-4deg); }
+    }
+
+    .balloon::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 7px solid #005e17;
+    }
+
+    .balloon-string {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      width: 1.5px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.45);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .balloon.popped {
+      opacity: 0;
+      transform: scale(2.2);
+      pointer-events: none;
+    }
+
+    .pop-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #52fb72;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 60;
+      animation: explode 0.35s ease-out forwards;
+    }
+
+    @keyframes explode {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.1); }
+    }
+
+    .character {
+      position: absolute;
+      width: 80px;
+      height: 140px;
+      z-index: 30;
+      transition: bottom 0.35s cubic-bezier(0.25, 1, 0.5, 1), left 0.35s ease, right 0.35s ease, transform 0.35s ease, width 0.35s ease, height 0.35s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: transparent !important;
+    }
+
+    .char-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .char-portrait {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6));
+    }
+
+    .p1-default-img {
+      content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 180"><path d="M30 40 Q50 0 70 40 Q80 70 50 80 Q20 70 30 40 Z" fill="%23f1c27d"/><circle cx="40" cy="45" r="4" fill="%23000"/><circle cx="60" cy="45" r="4" fill="%23000"/><path d="M20 85 L80 85 L90 140 L10 140 Z" fill="%231a365d"/><path d="M15 140 L40 140 L40 180 L15 180 Z" fill="%232d3748"/><path d="M60 140 L85 140 L85 180 L60 180 Z" fill="%232d3748"/></svg>');
+    }
+
+    .p2-default-img {
+      content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 180"><path d="M30 40 Q50 0 70 40 Q80 70 50 80 Q20 70 30 40 Z" fill="%23e0ac69"/><circle cx="40" cy="45" r="4" fill="%23000"/><circle cx="60" cy="45" r="4" fill="%23000"/><path d="M15 85 L85 85 L95 145 L5 145 Z" fill="%23805ad5"/><path d="M20 145 L45 145 L45 180 L20 180 Z" fill="%231a202c"/><path d="M55 145 L80 145 L80 180 L55 180 Z" fill="%231a202c"/></svg>');
+    }
+
+    .dice-area {
+      position: absolute;
+      bottom: 65px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 45;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 18px;
+      border-radius: 30px;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.7);
+    }
+
+    .dice-3d {
+      width: 52px;
+      height: 52px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease;
+    }
+
+    .dice-face {
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      background: radial-gradient(circle at 30% 30%, #e63946, #800000);
+      border: 2px solid #ffffff;
+      border-radius: 10px;
+      display: grid;
+      grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+      padding: 5px;
+      align-items: center;
+      justify-items: center;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
+    }
+
+    .pip {
+      width: 8px;
+      height: 8px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    .face-1 { transform: translateZ(26px); }
+    .face-2 { transform: rotateY(180deg) translateZ(26px); }
+    .face-3 { transform: rotateY(-90deg) translateZ(26px); }
+    .face-4 { transform: rotateY(90deg) translateZ(26px); }
+    .face-5 { transform: rotateX(90deg) translateZ(26px); }
+    .face-6 { transform: rotateX(-90deg) translateZ(26px); }
+
+    .dice-3d.rolling {
+      animation: spin3d 0.5s linear;
+    }
+
+    @keyframes spin3d {
+      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+      100% { transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg); }
+    }
+
+    .turn-badge {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.92);
+      color: #ffd700;
+      border: 1.5px solid #ffd700;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      z-index: 45;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.7);
+    }
+
+    .victory-modal {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      animation: modalFade 0.4s ease-out forwards;
+    }
+
+    @keyframes modalFade {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-card {
+      background: linear-gradient(135deg, #240833 0%, #520a32 100%);
+      border: 3px solid #ffd700;
+      border-radius: 20px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 0 35px #ffd700;
+      text-align: center;
+      max-width: 85%;
+    }
+
+    .modal-avatar-wrapper {
+      position: relative;
+      width: 100px;
+      height: 120px;
+      margin: 15px 0;
+    }
+
+    .modal-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: transparent;
+      filter: drop-shadow(0 0 10px #ffd700);
+    }
+
+    .modal-crown {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 38px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+      animation: crownBounce 0.6s infinite alternate;
+    }
+
+    @keyframes crownBounce {
+      0% { transform: translateX(-50%) translateY(0); }
+      100% { transform: translateX(-50%) translateY(-6px); }
+    }
+
+    .modal-title {
+      color: #ffd700;
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    .modal-subtitle {
+      color: #ffffff;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .restart-btn {
+      background: linear-gradient(135deg, #ffd700, #ff8800);
+      color: #000000;
+      border: none;
+      padding: 10px 26px;
+      border-radius: 22px;
+      font-weight: 900;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <div class="stadium-glow-left"></div>
+    <div class="stadium-glow-right"></div>
+
+    <button class="admin-toggle-btn" id="adminToggle">⚙ EDIT GAME</button>
+
+    <div class="disclaimer-box" id="disclaimerDisplay">
+      This is a fictional parody game.<br>
+      Any resemblance to real people is coincidental
+    </div>
+
+    <!-- Admin Panel Settings Drawer -->
+    <div class="admin-panel" id="adminPanel">
+      <h2 style="color: #ffd700; font-size: 15px; margin-bottom: 14px; text-align: center;">⚙️ GAME CUSTOMIZER</h2>
+
+      <div class="admin-section">
+        <h3>🎨 Background Customization</h3>
+        <div class="control-group">
+          <label>Upload Background Image:</label>
+          <input type="file" id="bgImageInput" accept="image/*">
+        </div>
+        <div class="control-group color-row" style="margin-top: 6px;">
+          <label>Top Background Color:</label>
+          <input type="color" id="bgTopColor" value="#2a022b">
+        </div>
+        <div class="control-group color-row" style="margin-top: 6px;">
+          <label>Middle Background Color:</label>
+          <input type="color" id="bgMidColor" value="#be3a20">
+        </div>
+        <div class="control-group color-row" style="margin-top: 6px;">
+          <label>Bottom Background Color:</label>
+          <input type="color" id="bgBottomColor" value="#0a1a09">
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>🔊 Sound Customization (MP3 / WAV)</h3>
+        <div class="control-group">
+          <label>Dice Roll Sound:</label>
+          <input type="file" id="diceSoundInput" accept="audio/*">
+        </div>
+        <div class="control-group">
+          <label>Balloon Pop Sound:</label>
+          <input type="file" id="popSoundInput" accept="audio/*">
+        </div>
+        <div class="control-group">
+          <label>Victory / Winner Sound:</label>
+          <input type="file" id="victorySoundInput" accept="audio/*">
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>👤 Character Upload</h3>
+        <div class="control-group">
+          <label>Player 1 Cutout Image:</label>
+          <input type="file" id="p1ImageInput" accept="image/*">
+        </div>
+        <div class="control-group">
+          <label>Player 2 Cutout Image:</label>
+          <input type="file" id="p2ImageInput" accept="image/*">
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>↔️ Individual Character Position Sliders</h3>
+        <div class="control-group">
+          <label>Player 1 Offset X: <span id="p1OffsetXVal">-3</span>%</label>
+          <input type="range" id="p1OffsetXSlider" min="-30" max="30" value="-3">
+        </div>
+        <div class="control-group">
+          <label>Player 2 Offset X: <span id="p2OffsetXVal">-3</span>%</label>
+          <input type="range" id="p2OffsetXSlider" min="-30" max="30" value="-3">
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>📐 Character Dimensions</h3>
+        <div class="control-group">
+          <label>Width: <span id="charWidthVal">80</span>px</label>
+          <input type="range" id="charWidthSlider" min="40" max="130" value="80">
+        </div>
+        <div class="control-group">
+          <label>Height: <span id="charHeightVal">140</span>px</label>
+          <input type="range" id="charHeightSlider" min="70" max="220" value="140">
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>🪜 Staircase Dimensions & Colors</h3>
+        <div class="control-group">
+          <label>Stair Height: <span id="stairHeightVal">36</span>px</label>
+          <input type="range" id="stairHeightSlider" min="20" max="55" value="36">
+        </div>
+        <div class="control-group">
+          <label>Stair Gap: <span id="stairGapVal">2</span>px</label>
+          <input type="range" id="stairGapSlider" min="0" max="10" value="2">
+        </div>
+        <div class="control-group">
+          <label>Stair Width Scale: <span id="stairWidthVal">100</span>%</label>
+          <input type="range" id="stairWidthSlider" min="60" max="120" value="100">
+        </div>
+        <div class="control-group color-row">
+          <label>Stair Top Color:</label>
+          <input type="color" id="stairTopColor" value="#5a606d">
+        </div>
+        <div class="control-group color-row" style="margin-top: 6px;">
+          <label>Stair Base Color:</label>
+          <input type="color" id="stairBaseColor" value="#18191b">
+        </div>
+        <div class="control-group color-row" style="margin-top: 6px;">
+          <label>Stair Border Color:</label>
+          <input type="color" id="stairBorderColor" value="#a3acbd">
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>🎈 Balloon Customization</h3>
+        <div class="control-group">
+          <label>Balloon Size: <span id="balloonSizeVal">42</span>px</label>
+          <input type="range" id="balloonSizeSlider" min="20" max="70" value="42">
+        </div>
+        <div class="control-group">
+          <label>String Length: <span id="balloonStringVal">20</span>px</label>
+          <input type="range" id="balloonStringSlider" min="8" max="40" value="20">
+        </div>
+        <div class="control-group color-row">
+          <label>Balloon Color:</label>
+          <input type="color" id="balloonColorPicker" value="#00b32d">
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>👑 Stage Text & Disclaimer</h3>
+        <div class="control-group">
+          <label>Stage Title Text:</label>
+          <input type="text" id="stageTextControl" value="प्रधान मंत्री 2026">
+        </div>
+        <div class="control-group">
+          <label>Disclaimer Box Text:</label>
+          <input type="text" id="disclaimerTextControl" value="This is a fictional parody game. Any resemblance to real people is coincidental">
+        </div>
+      </div>
+
+      <button class="reset-btn" id="resetDefaultsBtn">🔄 RESET ALL SETTINGS TO DEFAULTS</button>
+    </div>
+
+    <!-- Main Game Scene -->
+    <div class="scene">
+      <div class="throne-stage-wrapper">
+        <div class="royal-throne-container">
+          <svg class="royal-throne-svg" viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="goldLight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fff5a0"/>
+                <stop offset="30%" stop-color="#ffd700"/>
+                <stop offset="70%" stop-color="#b8860b"/>
+                <stop offset="100%" stop-color="#664600"/>
+              </linearGradient>
+              <linearGradient id="goldDark" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffe066"/>
+                <stop offset="50%" stop-color="#d4af37"/>
+                <stop offset="100%" stop-color="#543d00"/>
+              </linearGradient>
+              <radialGradient id="velvetRed" cx="50%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="#ff1a40"/>
+                <stop offset="50%" stop-color="#99001c"/>
+                <stop offset="100%" stop-color="#4a000a"/>
+              </radialGradient>
+              <linearGradient id="velvetSeat" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#c70025"/>
+                <stop offset="60%" stop-color="#800016"/>
+                <stop offset="100%" stop-color="#3b0008"/>
+              </linearGradient>
+              <radialGradient id="rubyGlow" cx="30%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#ff99a8"/>
+                <stop offset="40%" stop-color="#e60026"/>
+                <stop offset="100%" stop-color="#40000a"/>
+              </radialGradient>
+            </defs>
+
+            <path d="M 40 180 L 40 70 Q 40 15 100 10 Q 160 15 160 70 L 160 180 Z" fill="url(#goldLight)" stroke="#3a2700" stroke-width="3"/>
+            <path d="M 48 175 L 48 72 Q 48 25 100 20 Q 152 25 152 72 L 152 175 Z" fill="url(#goldDark)"/>
+            <path d="M 55 170 L 55 75 Q 55 32 100 28 Q 145 32 145 75 L 145 170 Z" fill="url(#velvetRed)"/>
+            
+            <path d="M 100 35 L 75 70 L 100 105 L 125 70 Z" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2"/>
+            <path d="M 100 105 L 75 140 L 100 170 L 125 140 Z" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2"/>
+            <path d="M 75 70 L 58 115 L 75 140 M 125 70 L 142 115 L 125 140" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2"/>
+            
+            <circle cx="100" cy="35" r="2.5" fill="url(#goldLight)"/>
+            <circle cx="75" cy="70" r="2.5" fill="url(#goldLight)"/>
+            <circle cx="125" cy="70" r="2.5" fill="url(#goldLight)"/>
+            <circle cx="100" cy="105" r="2.5" fill="url(#goldLight)"/>
+            <circle cx="58" cy="115" r="2.5" fill="url(#goldLight)"/>
+            <circle cx="142" cy="115" r="2.5" fill="url(#goldLight)"/>
+            <circle cx="75" cy="140" r="2.5" fill="url(#goldLight)"/>
+            <circle cx="125" cy="140" r="2.5" fill="url(#goldLight)"/>
+
+            <path d="M 100 2 L 112 16 L 100 24 L 88 16 Z" fill="url(#goldLight)" stroke="#3a2700" stroke-width="1"/>
+            <circle cx="100" cy="14" r="5" fill="url(#rubyGlow)"/>
+
+            <path d="M 22 135 C 22 120 40 120 52 130 L 52 178 L 22 178 Z" fill="url(#goldLight)" stroke="#3a2700" stroke-width="1.5"/>
+            <circle cx="28" cy="128" r="9" fill="url(#goldDark)"/>
+            <circle cx="26" cy="126" r="2" fill="#000"/>
+            
+            <path d="M 178 135 C 178 120 160 120 148 130 L 148 178 L 178 178 Z" fill="url(#goldLight)" stroke="#3a2700" stroke-width="1.5"/>
+            <circle cx="172" cy="128" r="9" fill="url(#goldDark)"/>
+            <circle cx="174" cy="126" r="2" fill="#000"/>
+
+            <path d="M 42 168 Q 100 162 158 168 L 162 195 Q 100 205 38 195 Z" fill="url(#velvetSeat)" stroke="url(#goldLight)" stroke-width="2"/>
+            <path d="M 40 195 L 160 195 L 156 204 L 44 204 Z" fill="url(#goldDark)"/>
+
+            <path d="M 42 204 L 35 238 L 52 238 L 56 204 Z" fill="url(#goldLight)" stroke="#3a2700" stroke-width="1"/>
+            <path d="M 158 204 L 165 238 L 148 238 L 144 204 Z" fill="url(#goldLight)" stroke="#3a2700" stroke-width="1"/>
+          </svg>
+
+          <div class="crown-on-seat-pad">👑</div>
+        </div>
+        <div class="throne-banner" id="stageBanner">प्रधान मंत्री 2026</div>
+      </div>
+
+      <div class="staircase-container" id="staircase"></div>
+
+      <div class="character" id="player1">
+        <div class="char-wrapper">
+          <img class="char-portrait p1-default-img" id="p1Img" alt="P1">
+        </div>
+      </div>
+
+      <div class="character" id="player2">
+        <div class="char-wrapper">
+          <img class="char-portrait p2-default-img" id="p2Img" alt="P2">
+        </div>
+      </div>
+
+      <div class="dice-area" id="diceBtn">
+        <div class="dice-3d" id="dice3d">
+          <div class="dice-face face-1"><div></div><div></div><div></div><div></div><div class="pip"></div><div></div><div></div><div></div><div></div></div>
+          <div class="dice-face face-2"><div class="pip"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="pip"></div></div>
+          <div class="dice-face face-3"><div class="pip"></div><div></div><div></div><div></div><div class="pip"></div><div></div><div></div><div></div><div class="pip"></div></div>
+          <div class="dice-face face-4"><div class="pip"></div><div></div><div class="pip"></div><div></div><div></div><div></div><div class="pip"></div><div></div><div class="pip"></div></div>
+          <div class="dice-face face-5"><div class="pip"></div><div></div><div class="pip"></div><div></div><div class="pip"></div><div></div><div class="pip"></div><div></div><div class="pip"></div></div>
+          <div class="dice-face face-6"><div class="pip"></div><div></div><div class="pip"></div><div class="pip"></div><div></div><div class="pip"></div><div class="pip"></div><div></div><div class="pip"></div></div>
+        </div>
+      </div>
+
+      <div class="turn-badge" id="turnBadge">Player 1 Turn (Tap Dice)</div>
+    </div>
+
+    <div class="victory-modal" id="victoryModal">
+      <div class="modal-card">
+        <div class="modal-title">VICTORY!</div>
+        <div class="modal-avatar-wrapper">
+          <div class="modal-crown">👑</div>
+          <img class="modal-avatar" id="modalAvatar" alt="Winner">
+        </div>
+        <div class="modal-subtitle" id="modalWinnerText">Player 1 Wins The Chair!</div>
+        <button class="restart-btn" id="modalPlayAgainBtn">PLAY AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'staircase_game_settings_v10';
+    const DB_NAME = 'StaircaseRaceDB_v10';
+    const DB_VERSION = 1;
+
+    const defaultConfig = {
+      bgTopColor: '#2a022b',
+      bgMidColor: '#be3a20',
+      bgBottomColor: '#0a1a09',
+      p1OffsetX: -3,
+      p2OffsetX: -3,
+      charWidth: 80,
+      charHeight: 140,
+      stairHeight: 36,
+      stairGap: 2,
+      stairWidthScale: 100,
+      stairTopColor: '#5a606d',
+      stairBaseColor: '#18191b',
+      stairBorderColor: '#a3acbd',
+      balloonSize: 42,
+      balloonStringLen: 20,
+      balloonColor: '#00b32d',
+      stageText: 'प्रधान मंत्री 2026',
+      disclaimerText: 'This is a fictional parody game. Any resemblance to real people is coincidental'
+    };
+
+    let config = { ...defaultConfig };
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('assets')) {
+            db.createObjectStore('assets');
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    async function saveAssetToDB(key, dataUrl) {
+      try {
+        const db = await openDB();
+        const tx = db.transaction('assets', 'readwrite');
+        tx.objectStore('assets').put(dataUrl, key);
+      } catch (e) {
+        console.error('Failed to save asset:', e);
+      }
+    }
+
+    async function getAssetFromDB(key) {
+      try {
+        const db = await openDB();
+        return new Promise((resolve) => {
+          const tx = db.transaction('assets', 'readonly');
+          const req = tx.objectStore('assets').get(key);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function clearAssetsFromDB() {
+      try {
+        const db = await openDB();
+        const tx = db.transaction('assets', 'readwrite');
+        tx.objectStore('assets').clear();
+      } catch (e) {
+        console.error('Failed to clear DB:', e);
+      }
+    }
+
+    function saveConfig() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    }
+
+    function loadConfig() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          config = { ...defaultConfig, ...JSON.parse(saved) };
+        } catch (e) {
+          config = { ...defaultConfig };
+        }
+      }
+    }
+
+    const maxSteps = 15;
+    let currentTurn = 1;
+    let p1Step = 0;
+    let p2Step = 0;
+    let isRolling = false;
+
+    const gameContainer = document.getElementById('game-container');
+    const staircase = document.getElementById('staircase');
+    const diceBtn = document.getElementById('diceBtn');
+    const dice3d = document.getElementById('dice3d');
+    const turnBadge = document.getElementById('turnBadge');
+    const player1 = document.getElementById('player1');
+    const player2 = document.getElementById('player2');
+    const p1Img = document.getElementById('p1Img');
+    const p2Img = document.getElementById('p2Img');
+    const victoryModal = document.getElementById('victoryModal');
+    const modalAvatar = document.getElementById('modalAvatar');
+    const modalWinnerText = document.getElementById('modalWinnerText');
+    const adminToggle = document.getElementById('adminToggle');
+    const adminPanel = document.getElementById('adminPanel');
+    const stageBanner = document.getElementById('stageBanner');
+    const disclaimerDisplay = document.getElementById('disclaimerDisplay');
+
+    for (let i = 0; i < maxSteps; i++) {
+      const step = document.createElement('div');
+      step.className = 'step';
+      staircase.appendChild(step);
+
+      const delayLeft = (Math.random() * 2).toFixed(2);
+      const delayRight = (Math.random() * 2).toFixed(2);
+
+      const balL = document.createElement('div');
+      balL.className = 'balloon';
+      balL.id = `balloon-left-${i + 1}`;
+      balL.style.left = '-18px';
+      balL.style.top = '-20px';
+      balL.style.animationDelay = `${delayLeft}s`;
+      
+      const stringL = document.createElement('div');
+      stringL.className = 'balloon-string';
+      balL.appendChild(stringL);
+      step.appendChild(balL);
+
+      const balR = document.createElement('div');
+      balR.className = 'balloon';
+      balR.id = `balloon-right-${i + 1}`;
+      balR.style.right = '-18px';
+      balR.style.top = '-20px';
+      balR.style.animationDelay = `${delayRight}s`;
+
+      const stringR = document.createElement('div');
+      stringR.className = 'balloon-string';
+      balR.appendChild(stringR);
+      step.appendChild(balR);
+    }
+
+    async function applyAllSettings() {
+      document.getElementById('bgTopColor').value = config.bgTopColor;
+      document.getElementById('bgMidColor').value = config.bgMidColor;
+      document.getElementById('bgBottomColor').value = config.bgBottomColor;
+
+      const bgImgData = await getAssetFromDB('bg_image');
+      if (bgImgData) {
+        gameContainer.style.background = `url('${bgImgData}') center/cover no-repeat`;
+      } else {
+        gameContainer.style.background = `linear-gradient(180deg, ${config.bgTopColor} 0%, ${config.bgMidColor} 50%, ${config.bgBottomColor} 100%)`;
+      }
+
+      document.getElementById('p1OffsetXSlider').value = config.p1OffsetX;
+      document.getElementById('p1OffsetXVal').innerText = config.p1OffsetX;
+      document.getElementById('p2OffsetXSlider').value = config.p2OffsetX;
+      document.getElementById('p2OffsetXVal').innerText = config.p2OffsetX;
+
+      document.getElementById('charWidthSlider').value = config.charWidth;
+      document.getElementById('charWidthVal').innerText = config.charWidth;
+      document.getElementById('charHeightSlider').value = config.charHeight;
+      document.getElementById('charHeightVal').innerText = config.charHeight;
+
+      document.getElementById('stairHeightSlider').value = config.stairHeight;
+      document.getElementById('stairHeightVal').innerText = config.stairHeight;
+      document.getElementById('stairGapSlider').value = config.stairGap;
+      document.getElementById('stairGapVal').innerText = config.stairGap;
+      document.getElementById('stairWidthSlider').value = config.stairWidthScale;
+      document.getElementById('stairWidthVal').innerText = config.stairWidthScale;
+
+      document.querySelectorAll('.step').forEach(step => {
+        step.style.height = `${config.stairHeight}px`;
+        step.style.marginBottom = `${config.stairGap}px`;
+      });
+
+      const baseWidths = [94, 90, 86, 82, 78, 74, 70, 66, 62, 58, 54, 50, 46, 42, 38];
+      document.querySelectorAll('.step').forEach((step, idx) => {
+        const scaledWidth = Math.min(98, Math.max(20, baseWidths[idx] * (config.stairWidthScale / 100)));
+        step.style.width = `${scaledWidth}%`;
+      });
+
+      document.getElementById('stairTopColor').value = config.stairTopColor;
+      document.getElementById('stairBaseColor').value = config.stairBaseColor;
+      document.getElementById('stairBorderColor').value = config.stairBorderColor;
+
+      document.querySelectorAll('.step').forEach(step => {
+        step.style.background = `linear-gradient(180deg, ${config.stairTopColor} 0%, ${config.stairBaseColor} 100%)`;
+        step.style.borderTopColor = config.stairBorderColor;
+      });
+
+      document.getElementById('balloonSizeSlider').value = config.balloonSize;
+      document.getElementById('balloonSizeVal').innerText = config.balloonSize;
+      document.getElementById('balloonStringSlider').value = config.balloonStringLen;
+      document.getElementById('balloonStringVal').innerText = config.balloonStringLen;
+      document.getElementById('balloonColorPicker').value = config.balloonColor;
+
+      document.querySelectorAll('.balloon').forEach(b => {
+        b.style.width = `${config.balloonSize}px`;
+        b.style.height = `${Math.round(config.balloonSize * 1.22)}px`;
+        b.style.background = `radial-gradient(circle at 35% 30%, #ffffff 0%, ${config.balloonColor} 60%, #000000 100%)`;
+      });
+
+      document.querySelectorAll('.balloon-string').forEach(s => {
+        s.style.height = `${config.balloonStringLen}px`;
+        s.style.bottom = `-${config.balloonStringLen}px`;
+      });
+
+      document.getElementById('stageTextControl').value = config.stageText;
+      stageBanner.innerText = config.stageText;
+
+      document.getElementById('disclaimerTextControl').value = config.disclaimerText;
+      disclaimerDisplay.innerText = config.disclaimerText;
+
+      updateCharPosition(1, p1Step);
+      updateCharPosition(2, p2Step);
+    }
+
+    document.getElementById('bgImageInput').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+          await saveAssetToDB('bg_image', evt.target.result);
+          applyAllSettings();
+        }
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('diceSoundInput').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+          await saveAssetToDB('dice_sound', evt.target.result);
+        }
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('popSoundInput').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+          await saveAssetToDB('pop_sound', evt.target.result);
+        }
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('victorySoundInput').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+          await saveAssetToDB('victory_sound', evt.target.result);
+        }
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('bgTopColor').addEventListener('input', (e) => {
+      config.bgTopColor = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('bgMidColor').addEventListener('input', (e) => {
+      config.bgMidColor = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('bgBottomColor').addEventListener('input', (e) => {
+      config.bgBottomColor = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('p1ImageInput').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+          const b64 = evt.target.result;
+          p1Img.src = b64;
+          p1Img.removeAttribute('style');
+          p1Img.classList.remove('p1-default-img');
+          await saveAssetToDB('p1_image', b64);
+          applyAllSettings();
+        }
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('p2ImageInput').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(evt) {
+          const b64 = evt.target.result;
+          p2Img.src = b64;
+          p2Img.removeAttribute('style');
+          p2Img.classList.remove('p2-default-img');
+          await saveAssetToDB('p2_image', b64);
+          applyAllSettings();
+        }
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('p1OffsetXSlider').addEventListener('input', (e) => {
+      config.p1OffsetX = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('p2OffsetXSlider').addEventListener('input', (e) => {
+      config.p2OffsetX = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('charWidthSlider').addEventListener('input', (e) => {
+      config.charWidth = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('charHeightSlider').addEventListener('input', (e) => {
+      config.charHeight = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('stairHeightSlider').addEventListener('input', (e) => {
+      config.stairHeight = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('stairGapSlider').addEventListener('input', (e) => {
+      config.stairGap = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('stairWidthSlider').addEventListener('input', (e) => {
+      config.stairWidthScale = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('stairTopColor').addEventListener('input', (e) => {
+      config.stairTopColor = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('stairBaseColor').addEventListener('input', (e) => {
+      config.stairBaseColor = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('stairBorderColor').addEventListener('input', (e) => {
+      config.stairBorderColor = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('balloonSizeSlider').addEventListener('input', (e) => {
+      config.balloonSize = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('balloonStringSlider').addEventListener('input', (e) => {
+      config.balloonStringLen = parseInt(e.target.value);
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('balloonColorPicker').addEventListener('input', (e) => {
+      config.balloonColor = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('stageTextControl').addEventListener('input', (e) => {
+      config.stageText = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('disclaimerTextControl').addEventListener('input', (e) => {
+      config.disclaimerText = e.target.value;
+      saveConfig();
+      applyAllSettings();
+    });
+
+    document.getElementById('resetDefaultsBtn').addEventListener('click', async () => {
+      config = { ...defaultConfig };
+      saveConfig();
+      await clearAssetsFromDB();
+      p1Img.src = '';
+      p1Img.classList.add('p1-default-img');
+      p2Img.src = '';
+      p2Img.classList.add('p2-default-img');
+      applyAllSettings();
+    });
+
+    adminToggle.addEventListener('click', () => {
+      adminPanel.classList.toggle('active');
+    });
+
+    function updateCharPosition(player, stepNum) {
+      const activeChar = player === 1 ? player1 : player2;
+      const stepIndex = Math.max(1, stepNum);
+      
+      const bottomPx = 125 + ((stepIndex - 1) * (config.stairHeight + config.stairGap));
+      activeChar.style.bottom = `${bottomPx}px`;
+
+      // Perspective Scale Logic: Step 0/1 par 100%, aur jaise jaise upar step 15 ki taraf jayega size smooth tarike se kam hokar ~68% tak hoga (clearly visible rahega)
+      const scaleFactor = 1 - ((stepIndex - 1) / (maxSteps - 1)) * 0.32;
+      const currentWidth = config.charWidth * scaleFactor;
+      const currentHeight = config.charHeight * scaleFactor;
+
+      activeChar.style.width = `${currentWidth}px`;
+      activeChar.style.height = `${currentHeight}px`;
+
+      const baseWidths = [94, 90, 86, 82, 78, 74, 70, 66, 62, 58, 54, 50, 46, 42, 38];
+      const scaledWidth = Math.min(98, Math.max(20, baseWidths[stepIndex - 1] * (config.stairWidthScale / 100)));
+      const sideMargin = (100 - scaledWidth) / 2;
+
+      if (player === 1) {
+        activeChar.style.left = `${sideMargin + config.p1OffsetX}%`;
+        activeChar.style.right = 'auto';
+      } else {
+        activeChar.style.right = `${sideMargin + config.p2OffsetX}%`;
+        activeChar.style.left = 'auto';
+      }
+    }
+
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    async function playDiceRollSound() {
+      const ctx = getAudioContext();
+      const customAudio = await getAssetFromDB('dice_sound');
+      if (customAudio) {
+        const s = new Audio(customAudio);
+        s.play().catch(() => {});
+        return;
+      }
+
+      for (let i = 0; i < 9; i++) {
+        setTimeout(() => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(180 + Math.random() * 350, ctx.currentTime);
+          
+          gain.gain.setValueAtTime(1.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start();
+          osc.stop(ctx.currentTime + 0.08);
+        }, i * 50);
+      }
+    }
+
+    function playStepSound() {
+      const ctx = getAudioContext();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(250, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(1.0, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    }
+
+    async function playPopSound() {
+      const ctx = getAudioContext();
+      const customAudio = await getAssetFromDB('pop_sound');
+      if (customAudio) {
+        const s = new Audio(customAudio);
+        s.play().catch(() => {});
+        return;
+      }
+      
+      const bufferSize = ctx.sampleRate * 0.18;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1);
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1200, ctx.currentTime);
+      filter.Q.setValueAtTime(1.5, ctx.currentTime);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(3.5, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(220, ctx.currentTime);
+      subOsc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.15);
+
+      subGain.gain.setValueAtTime(2.5, ctx.currentTime);
+      subGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+
+      subOsc.start();
+      subOsc.stop(ctx.currentTime + 0.15);
+      noise.start();
+    }
+
+    async function playVictorySound() {
+      const ctx = getAudioContext();
+      const customAudio = await getAssetFromDB('victory_sound');
+      if (customAudio) {
+        const s = new Audio(customAudio);
+        s.play().catch(() => {});
+        return;
+      }
+
+      const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+        
+        gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.12);
+        gain.gain.linearRampToValueAtTime(1.5, ctx.currentTime + idx * 0.12 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.8);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + idx * 0.12);
+        osc.stop(ctx.currentTime + idx * 0.12 + 0.8);
+      });
+
+      for (let c = 0; c < 15; c++) {
+        setTimeout(() => {
+          const clapBufSize = ctx.sampleRate * 0.08;
+          const clapBuf = ctx.createBuffer(1, clapBufSize, ctx.sampleRate);
+          const clapData = clapBuf.getChannelData(0);
+          for (let i = 0; i < clapBufSize; i++) {
+            clapData[i] = Math.random() * 2 - 1;
+          }
+          const clapSource = ctx.createBufferSource();
+          clapSource.buffer = clapBuf;
+
+          const clapFilter = ctx.createBiquadFilter();
+          clapFilter.type = 'highpass';
+          clapFilter.frequency.setValueAtTime(1000, ctx.currentTime);
+
+          const clapGain = ctx.createGain();
+          clapGain.gain.setValueAtTime(2.0, ctx.currentTime);
+          clapGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+          clapSource.connect(clapFilter);
+          clapFilter.connect(clapGain);
+          clapGain.connect(ctx.destination);
+
+          clapSource.start();
+        }, 800 + (c * 120));
+      }
+
+      for (let f = 0; f < 5; f++) {
+        setTimeout(() => {
+          const crackerSize = ctx.sampleRate * 0.35;
+          const crackerBuf = ctx.createBuffer(1, crackerSize, ctx.sampleRate);
+          const crackerData = crackerBuf.getChannelData(0);
+          for (let i = 0; i < crackerSize; i++) {
+            crackerData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.08));
+          }
+          const crackerSrc = ctx.createBufferSource();
+          crackerSrc.buffer = crackerBuf;
+
+          const crackerFilter = ctx.createBiquadFilter();
+          crackerFilter.type = 'lowpass';
+          crackerFilter.frequency.setValueAtTime(800, ctx.currentTime);
+          crackerFilter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.35);
+
+          const crackerGain = ctx.createGain();
+          crackerGain.gain.setValueAtTime(4.0, ctx.currentTime);
+          crackerGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+
+          crackerSrc.connect(crackerFilter);
+          crackerFilter.connect(crackerGain);
+          crackerGain.connect(ctx.destination);
+
+          crackerSrc.start();
+        }, 1000 + (f * 350));
+      }
+    }
+
+    function createParticleBurst(x, y) {
+      for (let i = 0; i < 12; i++) {
+        const p = document.createElement('div');
+        p.className = 'pop-particle';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 22 + Math.random() * 32;
+        p.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+        p.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 350);
+      }
+    }
+
+    function popBalloon(player, stepNumber) {
+      const side = player === 1 ? 'left' : 'right';
+      const balloon = document.getElementById(`balloon-${side}-${stepNumber}`);
+      if (balloon && !balloon.classList.contains('popped')) {
+        balloon.classList.add('popped');
+        playPopSound();
+        const rect = balloon.getBoundingClientRect();
+        createParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
+    }
+
+    const faceRotations = {
+      1: { x: 0, y: 0 },
+      2: { x: 0, y: 180 },
+      3: { x: 0, y: -90 },
+      4: { x: 0, y: 90 },
+      5: { x: -90, y: 0 },
+      6: { x: 90, y: 0 }
+    };
+
+    diceBtn.addEventListener('click', async () => {
+      if (isRolling) return;
+      isRolling = true;
+
+      await playDiceRollSound();
+      dice3d.classList.add('rolling');
+      const rolledValue = Math.floor(Math.random() * 6) + 1;
+
+      setTimeout(() => {
+        dice3d.classList.remove('rolling');
+        const rot = faceRotations[rolledValue];
+        dice3d.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
+
+        movePlayer(currentTurn, rolledValue);
+      }, 500);
+    });
+
+    function movePlayer(player, steps) {
+      let currentPos = player === 1 ? p1Step : p2Step;
+      let targetPos = Math.min(currentPos + steps, maxSteps);
+
+      let currentHop = currentPos;
+      const hopInterval = setInterval(() => {
+        if (currentHop < targetPos) {
+          currentHop++;
+          
+          playStepSound();
+          updateCharPosition(player, currentHop);
+          popBalloon(player, currentHop);
+
+          if (player === 1) p1Step = currentHop;
+          else p2Step = currentHop;
+        } else {
+          clearInterval(hopInterval);
+          isRolling = false;
+
+          if (targetPos >= maxSteps) {
+            turnBadge.innerText = `🎉 Player ${player} Wins! 🎉`;
+            turnBadge.style.background = '#ffd700';
+            turnBadge.style.color = '#000';
+            
+            const winningSrc = player === 1 ? p1Img.src : p2Img.src;
+            modalAvatar.src = winningSrc;
+            modalWinnerText.innerText = `PLAYER ${player} WINS THE ${config.stageText.toUpperCase()}!`;
+
+            playVictorySound();
+            setTimeout(() => {
+              victoryModal.style.display = 'flex';
+            }, 550);
+
+          } else {
+            currentTurn = currentTurn === 1 ? 2 : 1;
+            turnBadge.innerText = `Player ${currentTurn} Turn (Tap Dice)`;
+          }
+        }
+      }, 350);
+    }
+
+    document.getElementById('modalPlayAgainBtn').addEventListener('click', () => {
+      victoryModal.style.display = 'none';
+      p1Step = 0;
+      p2Step = 0;
+      currentTurn = 1;
+      turnBadge.innerText = `Player 1 Turn (Tap Dice)`;
+      turnBadge.style.background = 'rgba(0,0,0,0.92)';
+      turnBadge.style.color = '#ffd700';
+
+      document.querySelectorAll('.balloon').forEach(b => b.classList.remove('popped'));
+
+      updateCharPosition(1, 0);
+      updateCharPosition(2, 0);
+    });
+
+    window.onload = async function() {
+      loadConfig();
+      
+      const p1Data = await getAssetFromDB('p1_image');
+      if (p1Data) {
+        p1Img.src = p1Data;
+        p1Img.classList.remove('p1-default-img');
+      }
+
+      const p2Data = await getAssetFromDB('p2_image');
+      if (p2Data) {
+        p2Img.src = p2Data;
+        p2Img.classList.remove('p2-default-img');
+      }
+
+      applyAllSettings();
+    };
+  </script>
+</body>
+</html>
